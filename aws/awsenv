@@ -1,0 +1,4 @@
+export AWS_PROFILE=nitro
+export AWS_SSH_KEY_NAME=alutsch-ssh-key-notebook
+export AWS_SUBNETS=("subnet-08b661064a57e5dbd" "subnet-05994991e88c444ed" "subnet-0f46f92778eebc592")
+export AWS_SECURITY_GROUP_ID="sg-0772ae4b8cfc0e188"

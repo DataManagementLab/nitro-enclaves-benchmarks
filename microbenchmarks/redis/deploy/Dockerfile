@@ -1,0 +1,41 @@
+FROM redis:alpine
+
+RUN apk update && apk add --no-cache \
+    socat \
+    nmap-ncat \
+    iproute2
+
+COPY ./scripts /scripts
+RUN chmod +x /scripts/*.sh
+
+# Accept the following build parameters
+ARG PROXY_TOOL
+ARG PROXY_REUSE_DEPTH
+ARG SO_RCVBUF_SIZE
+ARG SO_SNDBUF_SIZE
+ARG SO_NONBLOCKING
+ARG SO_NO_DELAY
+ARG SOCAT_FORK
+
+# Passthrough defaults to entrypoint
+ENV PROXY_TOOL=${PROXY_TOOL}
+ENV PROXY_REUSE_DEPTH=${PROXY_REUSE_DEPTH}
+ENV SO_RCVBUF_SIZE=${SO_RCVBUF_SIZE}
+ENV SO_SNDBUF_SIZE=${SO_SNDBUF_SIZE}
+ENV SO_NONBLOCKING=${SO_NONBLOCKING}
+ENV SO_NO_DELAY=${SO_NO_DELAY}
+ENV SOCAT_FORK=${SOCAT_FORK}
+
+# benchmark (client) defaults
+ARG NUM_CLIENTS
+ARG PIPELINE
+ARG REDIS_TESTS
+ENV NUM_CLIENTS=${NUM_CLIENTS}
+ENV PIPELINE=${PIPELINE}
+ENV REDIS_TESTS=${REDIS_TESTS}
+
+# Default script
+ARG SCRIPT_NAME="./server-proxied.sh"
+ENV SCRIPT_NAME=${SCRIPT_NAME}
+WORKDIR /scripts
+ENTRYPOINT /bin/sh -c "cd /scripts && exec $SCRIPT_NAME"

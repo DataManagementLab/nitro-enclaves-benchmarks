@@ -1,0 +1,10 @@
+FROM alpine:latest
+
+RUN apk add --no-cache socat
+
+WORKDIR /scripts
+COPY ./scripts/run-proxy.sh run-proxy.sh
+
+RUN chmod +x run-proxy.sh
+
+CMD ./run-proxy.sh

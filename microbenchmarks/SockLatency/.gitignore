@@ -1,0 +1,10 @@
+
+# Ignore IDE files
+.devcontainer
+.vscode
+.idea
+
+# Ignore build files
+build
+bin
+*.eif

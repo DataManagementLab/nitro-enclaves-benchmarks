@@ -1,0 +1,124 @@
+# List instances
+alias ec2li="aws --profile $AWS_PROFILE ec2 describe-instances --output table --query \"Reservations[*].Instances[*].{Instance:InstanceId,State:State.Name,PrivateIp:PrivateIpAddress,PublicDnsName:PublicDnsName,Subnet:SubnetId,InstanceType:InstanceType,LaunchTime:LaunchTime}\""
+
+# List running instances
+alias ec2lir="ec2li --filters Name=instance-state-name,Values=running"
+
+# List AZs and subnets
+alias ec2laz="aws --profile $AWS_PROFILE ec2 describe-subnets --query \"Subnets[*].{AZ:AvailabilityZone,SubnetID:SubnetId}\""
+
+# Configure AWS pager
+export AWS_PAGER=""
+
+# Create instance
+# Parameter 1 (required): instance type
+# Parameter 2 (default 1): count
+# Parameter 3 (default subnet-08b661064a57e5dbd): subnet, determines availability zone (default 2a)
+# Use ec2laz to list availability zones and connected subnets incase you need to start the VM in a different AZ than the default 2a.
+ec2c() {
+    count=${2:-1}
+    subnet=${3:-"subnet-08b661064a57e5dbd"}
+    network_config="{\"SubnetId\":\"$subnet\",\"AssociatePublicIpAddress\":true,\"DeviceIndex\":0,\"Groups\":[\"sg-0772ae4b8cfc0e188\"]}"
+    echo "$network_config"
+    aws --profile $AWS_PROFILE ec2 run-instances \
+    --image-id resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 \
+    --count "$count" \
+    --instance-type "$1" \
+    --key-name "$AWS_SSH_KEY_NAME" \
+    --enclave-options 'Enabled=true' \
+    --network-interfaces=$network_config \
+    --instance-market-options file://spot-options.json \
+    --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":16}}]' \
+    --iam-instance-profile 'Name="EC2-S3-access-role"'
+}
+
+# Create an instance with spot pricing and Graviton CPU
+ec2cg() {
+    count=${2:-1}
+    subnet=${3:-"subnet-08b661064a57e5dbd"}
+    network_config="{\"SubnetId\":\"$subnet\",\"AssociatePublicIpAddress\":true,\"DeviceIndex\":0,\"Groups\":[\"sg-0772ae4b8cfc0e188\"]}"
+    echo "$network_config"
+    aws --profile $AWS_PROFILE ec2 run-instances \
+    --image-id resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64 \
+    --count "$count" \
+    --instance-type "$1" \
+    --key-name "$AWS_SSH_KEY_NAME" \
+    --enclave-options 'Enabled=true' \
+    --network-interfaces=$network_config \
+    --instance-market-options file://spot-options.json \
+    --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":16}}]' \
+    --iam-instance-profile 'Name="EC2-S3-access-role"'
+}
+
+# Create instance without spot options. Expensive!
+ec2ce() {
+    count=${2:-1}
+    aws --profile $AWS_PROFILE ec2 run-instances \
+    --image-id resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 \
+    --count "$count" \
+    --instance-type "$1" \
+    --key-name "$AWS_SSH_KEY_NAME" \
+    --enclave-options 'Enabled=true' \
+    --network-interfaces '{"SubnetId":"subnet-08b661064a57e5dbd","AssociatePublicIpAddress":true,"DeviceIndex":0,"Groups":["sg-0772ae4b8cfc0e188"]}' \
+    --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":16}}]' \
+    --iam-instance-profile 'Name="EC2-S3-access-role"'
+}
+
+# Create one instance in each availability zone that we have a subnet for. Subnets are hard-coded.
+ec2caz() {
+    subnets=("subnet-08b661064a57e5dbd" "subnet-05994991e88c444ed" "subnet-0f46f92778eebc592")
+    for subnet in "${subnets[@]}";
+    do
+        if [[ "$2" == "1" ]]; then
+            ec2cg "$1" 1 "$subnet"
+        else
+            ec2c "$1" 1 "$subnet"
+        fi
+    done
+}
+
+# Setup instance
+ec2setup() {
+    ssh -o "StrictHostKeyChecking no" "$1" 'sudo dnf install git -y && ssh -T -o "StrictHostKeyChecking accept-new" git@github.com ; mkdir -p ~/AWSNitroBenchmark && cd ~/AWSNitroBenchmark && git clone git@github.com:DataManagementLab/nitro-enclaves-benchmarks.git . && cd aws && chmod +x setup_ec2.sh && ./setup_ec2.sh'
+}
+
+# Terminate instance
+ec2t() {
+    aws --profile $AWS_PROFILE ec2 terminate-instances --instance-ids $@
+}
+
+s3sr() {
+    aws --profile $AWS_PROFILE s3 cp "$1" s3://nitro-enclaves-result-bucket/
+}
+
+
+# Spot & Pricing Information
+# Parameter 1 (required): instance type(s)
+# Parameter 2 (default us-west-2): region
+# Parameter 3 (only ec2sp, default 0): lookback hours
+
+ec2sp() {
+    region=${2:-"us-west-2"}
+    lookback_hours=${3:-0}
+    start_time=$(date -u -d "-${lookback_hours} hours" +%FT%TZ 2>/dev/null || date -u -v-"${lookback_hours}"H +%FT%TZ)
+    aws --profile $AWS_PROFILE ec2 describe-spot-price-history \
+    --instance-types "$1" \
+    --product-descriptions "Linux/UNIX" \
+    --start-time "$start_time" \
+    --query 'SpotPriceHistory[*].{AvailabilityZone:AvailabilityZone,InstanceType:InstanceType,SpotPrice:SpotPrice,Time:Timestamp}' \
+    --region "$region"
+}
+
+ec2ssc() {
+    region=${2:-"us-west-2"}
+    aws --profile $AWS_PROFILE ec2 get-spot-placement-scores \
+    --instance-types "$1" \
+    --target-capacity 2 \
+    --single-availability-zone \
+    --region-names "$region"
+}
+
+ec2s() {
+    ec2sp "$1" "$2" "$3"
+    ec2ssc "$1" "$2"
+}

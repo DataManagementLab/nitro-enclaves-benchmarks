@@ -1,0 +1,38 @@
+
+# compiled files
+cmake-build-*
+[Bb]uild*
+
+# python & virtual environment
+venv
+.venv
+**/__pycache__/
+*.pyc
+
+# temporary log files
+logs/
+logs*.txt
+*.log
+*.log.txt
+
+# Mac OS X Finder files
+.DS_Store
+
+# IDE
+.idea/
+.devcontainers/
+.github/
+.vscode/
+
+# Ignore result files and plots
+results
+
+# quick plots
+Rplots.pdf
+
+# Ignore data directory
+data
+img
+
+# Ignore enclave image files
+.eif

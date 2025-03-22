@@ -1,0 +1,8 @@
+# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+FROM python:3.7.9-alpine3.12
+
+COPY enclave_helper.py .
+
+CMD ["/usr/local/bin/python3", "enclave_helper.py", "-l", "DEBUG", "client", "3", "5005", "-c", "mkdir -p /tmp ; echo hello world from subproc > /tmp/test.txt", "-f", "/tmp/test.txt", "-fp", "5069"]
