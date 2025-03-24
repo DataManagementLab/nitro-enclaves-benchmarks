@@ -26,8 +26,6 @@ This Repository is structured as follows:
 
 ## Reproduction of Results
 
-We were not yet able to make all configurations in this repository independent of our AWS account and to upload our measurements as CSV files. We will improve this in the coming days.
-
 All plots and intermediate results can be reproduced with the code and README descriptions in the microbenchmarks directories mentioned above.
 Our results are part of this repo as well for exploration and replotting. Make sure to [prepare the according tools](#plotting).
 To rerun the benchmarks make sure to follow the [requirements instructions](#requirements) below.

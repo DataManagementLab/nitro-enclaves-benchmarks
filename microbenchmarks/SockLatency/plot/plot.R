@@ -44,24 +44,32 @@ df <- lapply(csv_files, function(file) {
     return(NULL)  # Skip invalid files
   }
 }) %>%
-  bind_rows() %>%
-  mutate_if(is.character, trimws) %>%
-  mutate(
-    architecture_id = case_when(
-      scenario == "single_instance" & protocol == "inet"  ~ 1,
-      scenario == "single_instance" & protocol == "vsock"  ~ 2,
-      scenario == "single_instance_proxy" ~ 3,
-      scenario == "cross_instance_host2host" ~ 4,
-      scenario == "cross_instance_host2enclave" ~ 5,
-      scenario == "cross_instance_proxy" ~ 6,
-      TRUE ~ NA
-    )
-  )
+  bind_rows()
 
-# store the data
 agg_store_path <- normalizePath("../results/data/results.csv", mustWork = FALSE)
-write.csv(df, file = agg_store_path, row.names = FALSE)
-print(paste("Combined data stored to:", agg_store_path))
+if (nrow(df)) {
+  # process combined data & cleanup
+  df <- df %>%
+    mutate_if(is.character, trimws) %>%
+    mutate(
+      architecture_id = case_when(
+        scenario == "single_instance" & protocol == "inet"  ~ 1,
+        scenario == "single_instance" & protocol == "vsock"  ~ 2,
+        scenario == "single_instance_proxy" ~ 3,
+        scenario == "cross_instance_host2host" ~ 4,
+        scenario == "cross_instance_host2enclave" ~ 5,
+        scenario == "cross_instance_proxy" ~ 6,
+        TRUE ~ NA
+      )
+    )
+
+  # store the data
+  write.csv(df, file = agg_store_path, row.names = FALSE)
+  print(paste("Combined data stored to:", agg_store_path))
+} else {
+  df <- read.csv(agg_store_path, stringsAsFactors = TRUE)
+  print(paste("Results read from", agg_store_path))
+}
 
 # all plots from the paper were generated via plot.py
 # for your own exploration you can use the following code

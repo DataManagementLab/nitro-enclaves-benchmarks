@@ -36,7 +36,14 @@ To reproduce the experiments in the paper:
   ```shell
   cd AWSNitroBenchmark/microbenchmarks/iperf/ && ./run_0_preparation.sh && ./run_3_message_sizes.sh
   ```
-  TODO: commands for network baseline
+  In order to add a networked baseline across instances run following command on the instance being the server:
+  ```shell
+  cd AWSNitroBenchmark/microbenchmarks/iperf/ && ./run_0_preparation && ./run_4b_expose_host.sh
+  ```
+  and after the command returns successfully (i.e. the server is up and running), the following on the client instance:
+  ```shell
+  cd AWSNitroBenchmark/microbenchmarks/iperf/ && ./run_0_preparation && ./run_4c_cross_instance.sh
+  ```
 - Figure 7: Run the following commands on an c6in.4xlarge instance:
   ```shell
   cd AWSNitroBenchmark/microbenchmarks/iperf/ && ./run_0_preparation.sh && ./run_2_multi.sh

@@ -29,7 +29,7 @@ def main():
             & ~((df["instance_type"] == "c6in.16xlarge") & (df["setup"] == "direct") )
             ]
 
-    df.to_csv(f"{DATA_DIR}/filtered.csv")
+    df.to_csv(f"{DATA_DIR}/filtered.csv", index=False)
 
     x_axis = "Setting"
     y_axis_1 = "Throughput [ops/s]"

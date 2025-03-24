@@ -26,7 +26,7 @@ def plot_paper():
             & (df["architecture_id"] <= 5)
             ]
 
-    df.to_csv(f"{DATA_DIR}/filtered.csv")
+    df.to_csv(f"{DATA_DIR}/filtered.csv", index=False)
 
     # Project to required columns
     x_axis = "Message Size [Byte]"
